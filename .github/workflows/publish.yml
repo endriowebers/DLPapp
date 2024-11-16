@@ -1,35 +1,62 @@
 on:
-  workflow_dispatch:
   push:
-    branches: main
+    branches: [main, master]
+  release:
+    types: [published]
+  workflow_dispatch: {}
 
-name: Quarto Publish
+name: demo-website
 
 jobs:
-  build-deploy:
+  demo-website:
     runs-on: ubuntu-latest
+    concurrency:
+      group: quarto-website-${{ github.event_name != 'pull_request' || github.run_id }}
     permissions:
-      contents: write
+      contents: read
+      pages: write
+      id-token: write
     steps:
-      - name: Check out repository
+      - name: "Check out repository"
         uses: actions/checkout@v4
 
-      - name: Set up Quarto
+      - name: "Setup pandoc"
+        uses: r-lib/actions/setup-pandoc@v2
+
+      - name: "Setup R"
+        uses: r-lib/actions/setup-r@v2
+
+      - name: "Setup R dependencies for Quarto's knitr engine"
+        uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          packages: |
+            shinylive@0.3.0
+            knitr
+            rmarkdown
+            downlit
+            xml2
+            dplyr
+            webr
+
+      - name: "Set up Quarto"
         uses: quarto-dev/quarto-actions/setup@v2
 
-      - name: Install R
-        uses: r-lib/actions/setup-r@v2
-        with:
-          r-version: '4.2.0'
+      - name: "Render working directory"
+        uses: quarto-dev/quarto-actions/render@v2
 
-      - name: Install R Dependencies
-        uses: r-lib/actions/setup-renv@v2
-        with:
-          cache-version: 1
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v2
+        with: 
+          retention-days: 1
 
-      - name: Render and Publish
-        uses: quarto-dev/quarto-actions/publish@v2
-        with:
-          target: gh-pages
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  deploy:
+    runs-on: ubuntu-latest
+    needs: demo-website
+    environment:
+      name: github-pages  # Define o ambiente necessário para o Pages
+    permissions:
+      pages: write  # Define permissões para o Pages
+      id-token: write
+    steps:
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v2
