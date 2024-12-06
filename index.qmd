@@ -32,7 +32,6 @@ OBS: A função de exportação de arquivos não está funcionando devido ao pac
 #| standalone: true
 #| viewerHeight: 1000
 
-
 library(shiny)
 library(DT)
 library(readr)
@@ -202,7 +201,6 @@ server <- function(input, output) {
 
 # Crie o aplicativo Shiny
 shinyApp(ui = ui, server = server)
-
 
 
 ```
